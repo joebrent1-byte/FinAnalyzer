@@ -1,0 +1,82 @@
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { useAppStore } from '../store/useAppStore';
+
+export default function PortfolioScreen() {
+  const { portfolio } = useAppStore();
+
+  const totalValue = portfolio.reduce((sum, holding) => sum + holding.shares * holding.avgCost, 0);
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Text style={styles.header}>Portfolio</Text>
+      <View style={styles.card}>
+        <Text style={styles.label}>Total invested</Text>
+        <Text style={styles.value}>${totalValue.toFixed(2)}</Text>
+      </View>
+
+      {portfolio.map((holding) => (
+        <View key={holding.symbol} style={styles.holdingRow}>
+          <View>
+            <Text style={styles.symbol}>{holding.symbol}</Text>
+            <Text style={styles.meta}>{holding.shares} shares</Text>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={styles.symbol}>${(holding.shares * holding.avgCost).toFixed(2)}</Text>
+            <Text style={styles.meta}>Avg ${holding.avgCost.toFixed(2)}</Text>
+          </View>
+        </View>
+      ))}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#020817',
+  },
+  content: {
+    padding: 16,
+  },
+  header: {
+    color: '#F8FAFC',
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 16,
+  },
+  card: {
+    backgroundColor: '#111827',
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 16,
+  },
+  label: {
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+  },
+  value: {
+    color: '#F8FAFC',
+    fontSize: 30,
+    fontWeight: '800',
+    marginTop: 8,
+  },
+  holdingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+  },
+  symbol: {
+    color: '#F8FAFC',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  meta: {
+    color: '#94A3B8',
+    marginTop: 4,
+  },
+});
