@@ -10,6 +10,8 @@ export type Quote = {
   dividendYield?: number;
   beta?: number;
   volume?: number;
+  evEbitda?: number;
+  evEbit?: number;
 };
 
 export type PortfolioHolding = {

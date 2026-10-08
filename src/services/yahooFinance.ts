@@ -67,6 +67,8 @@ export async function fetchQuoteSummary(symbol: string): Promise<Quote> {
     dividendYield: result.summaryDetail?.dividendYield?.raw ?? result.financialData?.dividendYield?.raw ?? null,
     beta: result.defaultKeyStatistics?.beta?.raw ?? null,
     volume: result.summaryDetail?.volume?.raw ?? null,
+    evEbitda: result.defaultKeyStatistics?.enterpriseToEbitda?.raw ?? null,
+    evEbit: result.defaultKeyStatistics?.enterpriseToEbit?.raw ?? null,
   };
 }
 
