@@ -14,13 +14,14 @@ type AppState = {
 
 export const useAppStore = create<AppState>((set) => ({
   selectedSymbol: 'AAPL',
-  watchlist: ['AAPL', 'MSFT', 'NVDA', 'AMZN'],
+  watchlist: ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'META'],
   portfolio: [
     { symbol: 'AAPL', shares: 20, avgCost: 175 },
     { symbol: 'MSFT', shares: 10, avgCost: 320 },
+    { symbol: 'NVDA', shares: 8, avgCost: 132 },
   ],
   quote: null,
-  setSelectedSymbol: (symbol) => set({ selectedSymbol: symbol }),
+  setSelectedSymbol: (symbol) => set({ selectedSymbol: symbol.toUpperCase() }),
   setQuote: (quote) => set({ quote }),
   setWatchlist: (symbols) => set({ watchlist: symbols }),
   addToPortfolio: (holding) =>

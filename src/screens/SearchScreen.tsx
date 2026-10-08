@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, ActivityIndicator } from 'react-native';
-import { useAppStore } from '../store/useAppStore';
 import { searchSymbol } from '../services/yahooFinance';
+import { useAppStore } from '../store/useAppStore';
+
+const sampleFilters = ['Blue Chip', 'Growth', 'Tech', 'Dividend', 'Macro'];
 
 export default function SearchScreen() {
   const { watchlist, setWatchlist, setSelectedSymbol } = useAppStore();
@@ -9,14 +11,20 @@ export default function SearchScreen() {
   const [results, setResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
+  const handleSearch = async (nextQuery?: string) => {
+    const term = (nextQuery ?? query).trim();
+    if (!term) {
+      setResults([]);
+      return;
+    }
+
     setSearching(true);
     try {
-      const matches = await searchSymbol(query);
+      const matches = await searchSymbol(term);
       setResults(matches);
     } catch (error) {
       console.error('Search failed:', error);
+      setResults([]);
     } finally {
       setSearching(false);
     }
@@ -31,17 +39,25 @@ export default function SearchScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.header}>Stock screening</Text>
+      <Text style={styles.header}>Research screen</Text>
       <TextInput
         value={query}
         onChangeText={setQuery}
-        placeholder="Search by company or ticker"
+        placeholder="Search company or ticker"
         placeholderTextColor="#94A3B8"
         style={styles.input}
-        onSubmitEditing={handleSearch}
+        onSubmitEditing={() => handleSearch()}
       />
 
-      <Pressable style={styles.actionButton} onPress={handleSearch}>
+      <View style={styles.filterRow}>
+        {sampleFilters.map((filter) => (
+          <Pressable key={filter} style={styles.filterChip} onPress={() => handleSearch(filter)}>
+            <Text style={styles.filterText}>{filter}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Pressable style={styles.actionButton} onPress={() => handleSearch()}>
         <Text style={styles.actionText}>Search</Text>
       </Pressable>
 
@@ -52,14 +68,14 @@ export default function SearchScreen() {
           <Pressable key={item.symbol} style={styles.resultRow} onPress={() => addToWatchlist(item.symbol)}>
             <View>
               <Text style={styles.symbol}>{item.symbol}</Text>
-              <Text style={styles.name}>{item.shortname ?? item.longname ?? 'No name'}</Text>
+              <Text style={styles.name}>{item.shortname ?? item.longname ?? 'No company name'}</Text>
             </View>
             <Text style={styles.tag}>Add</Text>
           </Pressable>
         ))}
       </View>
 
-      <Text style={styles.sectionTitle}>Watchlist</Text>
+      <Text style={styles.sectionTitle}>Active watchlist</Text>
       <View style={styles.watchlistBox}>
         {watchlist.map((symbol) => (
           <Pressable key={symbol} style={styles.watchItem} onPress={() => setSelectedSymbol(symbol)}>
@@ -94,12 +110,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#1E293B',
   },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginVertical: 12,
+  },
+  filterChip: {
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  filterText: {
+    color: '#E2E8F0',
+    fontWeight: '600',
+  },
   actionButton: {
     backgroundColor: '#3B82F6',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 8,
   },
   actionText: {
     color: '#F8FAFC',

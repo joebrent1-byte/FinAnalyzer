@@ -1,14 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View, TextInput, ActivityIndicator, Pressable } from 'react-native';
-import { fetchChartData, fetchQuoteSummary, searchSymbol } from '../services/yahooFinance';
+import { fetchChartData, fetchQuoteSummary } from '../services/yahooFinance';
 import { useAppStore } from '../store/useAppStore';
 import MetricCard from '../components/MetricCard';
 import StockChart from '../components/StockChart';
+import { formatCompactNumber } from '../services/yahooFinance';
 
 export default function DashboardScreen() {
-  const { selectedSymbol, setSelectedSymbol, quote, setQuote } = useAppStore();
+  const { selectedSymbol, setSelectedSymbol, quote, setQuote, watchlist } = useAppStore();
   const [chartData, setChartData] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
+  const [symbolInput, setSymbolInput] = useState(selectedSymbol);
+
+  useEffect(() => {
+    setSymbolInput(selectedSymbol);
+  }, [selectedSymbol]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -31,16 +37,28 @@ export default function DashboardScreen() {
     loadData();
   }, [selectedSymbol]);
 
+  const marketMetrics = useMemo(
+    () => [
+      { label: 'Market Cap', value: quote ? formatCompactNumber(quote.marketCap) : '$0', subtitle: 'Size' },
+      { label: 'P/E', value: quote?.peRatio ? quote.peRatio.toFixed(1) : 'N/A', subtitle: 'Valuation' },
+      { label: 'Dividend', value: quote?.dividendYield ? `${quote.dividendYield.toFixed(2)}%` : 'N/A', subtitle: 'Yield' },
+      { label: 'Beta', value: quote?.beta ? quote.beta.toFixed(2) : 'N/A', subtitle: 'Risk' },
+    ],
+    [quote],
+  );
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.header}>Market overview</Text>
+      <Text style={styles.header}>Investment overview</Text>
 
       <TextInput
-        value={selectedSymbol}
-        onChangeText={setSelectedSymbol}
+        value={symbolInput}
+        onChangeText={setSymbolInput}
         placeholder="Enter ticker"
         placeholderTextColor="#94A3B8"
         style={styles.input}
+        onSubmitEditing={() => setSelectedSymbol(symbolInput)}
+        autoCapitalize="characters"
       />
 
       {loading ? (
@@ -50,15 +68,35 @@ export default function DashboardScreen() {
           <View style={styles.heroCard}>
             <Text style={styles.ticker}>{quote?.symbol ?? selectedSymbol}</Text>
             <Text style={styles.price}>${quote?.price?.toFixed(2) ?? '0.00'}</Text>
-            <Text style={styles.change}>{quote?.changePercent ? `${quote.changePercent.toFixed(2)}%` : '0.00%'}</Text>
+            <Text style={[styles.change, { color: (quote?.changePercent ?? 0) >= 0 ? '#4ADE80' : '#F87171' }]}>
+              {quote?.changePercent ? `${quote.changePercent.toFixed(2)}%` : '0.00%'}
+            </Text>
             <Text style={styles.subtitle}>{quote?.shortName ?? 'Market data'}</Text>
           </View>
 
+          <Text style={styles.sectionLabel}>Watchlist</Text>
+          <View style={styles.watchlistRow}>
+            {watchlist.map((symbol) => (
+              <Pressable
+                key={symbol}
+                style={[styles.watchChip, symbol === selectedSymbol && styles.watchChipActive]}
+                onPress={() => setSelectedSymbol(symbol)}
+              >
+                <Text style={styles.watchChipText}>{symbol}</Text>
+              </Pressable>
+            ))}
+          </View>
+
           <View style={styles.metricsRow}>
-            <MetricCard label="Market Cap" value={quote ? `$${(quote.marketCap / 1_000_000_000).toFixed(1)}B` : '$0.0B'} />
-            <MetricCard label="P/E" value={quote?.peRatio ? quote.peRatio.toFixed(1) : 'N/A'} />
-            <MetricCard label="Dividend" value={quote?.dividendYield ? `${quote.dividendYield.toFixed(2)}%` : 'N/A'} />
-            <MetricCard label="Beta" value={quote?.beta ? quote.beta.toFixed(2) : 'N/A'} />
+            {marketMetrics.map((metric) => (
+              <MetricCard
+                key={metric.label}
+                label={metric.label}
+                value={metric.value}
+                subtitle={metric.subtitle}
+                accent="#60A5FA"
+              />
+            ))}
           </View>
 
           {chartData.length > 0 ? <StockChart data={chartData} /> : null}
@@ -110,7 +148,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   change: {
-    color: '#4ADE80',
     fontSize: 18,
     fontWeight: '700',
     marginTop: 6,
@@ -118,6 +155,32 @@ const styles = StyleSheet.create({
   subtitle: {
     color: '#94A3B8',
     marginTop: 8,
+  },
+  sectionLabel: {
+    color: '#E2E8F0',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  watchlistRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 14,
+  },
+  watchChip: {
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  watchChipActive: {
+    backgroundColor: '#2563EB',
+  },
+  watchChipText: {
+    color: '#F8FAFC',
+    fontWeight: '600',
   },
   metricsRow: {
     flexDirection: 'row',

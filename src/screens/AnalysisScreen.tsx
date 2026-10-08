@@ -1,35 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { fetchQuoteSummary } from '../services/yahooFinance';
 import { useAppStore } from '../store/useAppStore';
+import { formatCompactNumber } from '../services/yahooFinance';
 import MetricCard from '../components/MetricCard';
 
 export default function AnalysisScreen() {
-  const { selectedSymbol, setQuote, quote } = useAppStore();
-  const [loading, setLoading] = useState(true);
+  const { selectedSymbol, quote } = useAppStore();
+  const [loading] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const result = await fetchQuoteSummary(selectedSymbol);
-        setQuote(result);
-      } catch (error) {
-        console.error('Analysis load failed', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
-  }, [selectedSymbol]);
-
-  const metrics = [
-    { label: 'P/E', value: quote?.peRatio ? quote.peRatio.toFixed(1) : 'N/A', subtitle: 'Valuation' },
-    { label: 'P/S', value: quote ? (quote.marketCap / (quote.price * 1_000_000)).toFixed(2) : 'N/A', subtitle: 'Revenue multiple' },
-    { label: 'Dividend', value: quote?.dividendYield ? `${quote.dividendYield.toFixed(2)}%` : 'N/A', subtitle: 'Yield' },
-    { label: 'Beta', value: quote?.beta ? quote.beta.toFixed(2) : 'N/A', subtitle: 'Risk' },
-  ];
+  const metrics = useMemo(
+    () => [
+      { label: 'Price', value: quote ? `$${quote.price.toFixed(2)}` : 'N/A', subtitle: 'Current' },
+      { label: 'Market Cap', value: quote ? formatCompactNumber(quote.marketCap) : 'N/A', subtitle: 'Size' },
+      { label: 'Dividend', value: quote?.dividendYield ? `${quote.dividendYield.toFixed(2)}%` : 'N/A', subtitle: 'Yield' },
+      { label: 'Beta', value: quote?.beta ? quote.beta.toFixed(2) : 'N/A', subtitle: 'Volatility' },
+    ],
+    [quote],
+  );
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
